@@ -15,6 +15,13 @@ function openReturn(order, lines) {
     throw new Error('a return must cover at least one line');
   }
 
+  // Both guards survive: line eligibility narrows the refund payload, while
+  // the delivery window applies to the order as a whole.
+  const returnableLines = lines.filter((line) => line.finalClearance !== true);
+  if (returnableLines.length === 0) {
+    throw new Error('final-clearance items cannot be returned');
+  }
+
   if (order.deliveredAt) {
     const deliveredAt = new Date(order.deliveredAt).getTime();
     const ageInDays = (Date.now() - deliveredAt) / (24 * 60 * 60 * 1000);
@@ -25,7 +32,7 @@ function openReturn(order, lines) {
 
   return {
     orderId: order.id,
-    lines,
+    lines: returnableLines,
     raisedAt: new Date().toISOString(),
     approvedBy: null,
     approvedAt: null,
