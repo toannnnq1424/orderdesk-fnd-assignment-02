@@ -11,6 +11,8 @@
  * @returns {object} the new return request
  */
 function openReturn(order, lines) {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const RETURN_WINDOW_DAYS = 30;
   if (lines.length === 0) {
     throw new Error('a return must cover at least one line');
   }
@@ -24,8 +26,11 @@ function openReturn(order, lines) {
 
   if (order.deliveredAt) {
     const deliveredAt = new Date(order.deliveredAt).getTime();
-    const ageInDays = (Date.now() - deliveredAt) / (24 * 60 * 60 * 1000);
-    if (ageInDays > 30) {
+    if (Number.isNaN(deliveredAt)) {
+      throw new Error('deliveredAt must be a valid timestamp');
+    }
+    const ageInDays = (Date.now() - deliveredAt) / DAY_MS;
+    if (ageInDays > RETURN_WINDOW_DAYS) {
       throw new Error('the 30-day return window has closed');
     }
   }
