@@ -15,6 +15,14 @@ function openReturn(order, lines) {
     throw new Error('a return must cover at least one line');
   }
 
+  if (order.deliveredAt) {
+    const deliveredAt = new Date(order.deliveredAt).getTime();
+    const ageInDays = (Date.now() - deliveredAt) / (24 * 60 * 60 * 1000);
+    if (ageInDays > 30) {
+      throw new Error('the 30-day return window has closed');
+    }
+  }
+
   return {
     orderId: order.id,
     lines,
