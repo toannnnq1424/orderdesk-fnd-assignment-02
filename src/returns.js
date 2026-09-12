@@ -11,13 +11,28 @@
  * @returns {object} the new return request
  */
 function openReturn(order, lines) {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const RETURN_WINDOW_DAYS = 30;
   if (lines.length === 0) {
     throw new Error('a return must cover at least one line');
   }
 
-  const returnableLines = lines.filter((line) => !line.finalClearance);
+  // Both guards survive: line eligibility narrows the refund payload, while
+  // the delivery window applies to the order as a whole.
+  const returnableLines = lines.filter((line) => line.finalClearance !== true);
   if (returnableLines.length === 0) {
     throw new Error('final-clearance items cannot be returned');
+  }
+
+  if (order.deliveredAt) {
+    const deliveredAt = new Date(order.deliveredAt).getTime();
+    if (Number.isNaN(deliveredAt)) {
+      throw new Error('deliveredAt must be a valid timestamp');
+    }
+    const ageInDays = (Date.now() - deliveredAt) / DAY_MS;
+    if (ageInDays > RETURN_WINDOW_DAYS) {
+      throw new Error('the 30-day return window has closed');
+    }
   }
 
   return {
